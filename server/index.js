@@ -45,6 +45,34 @@ app.post('/api/login', async (req, res) => {
     } catch (error) { console.error(error); res.status(500).json({ message: 'Internal server error.' }); }
 });
 
+// Submit Outpass Request
+app.post('/api/outpass', authenticateToken, requireRole(['STUDENT']), async (req, res) => {
+  const { destination, reason, departureDate, returnDate } = req.body;
+
+  if (!destination || !reason || !departureDate || !returnDate) {
+    return res.status(400).json({ message: 'All fields are required.' });
+  }
+
+  try {
+    const outpass = await prisma.outpass.create({
+      data: {
+        // req.user.userId is securely pulled from your JWT token middleware
+        studentId: req.user.userId, 
+        destination,
+        reason,
+        // Prisma requires standard ISO Date objects
+        departureDate: new Date(departureDate),
+        returnDate: new Date(returnDate),
+      },
+    });
+    
+    res.status(201).json({ message: 'Outpass requested successfully', outpass });
+  } catch (error) {
+    console.error('Error creating outpass:', error);
+    res.status(500).json({ message: 'Internal server error.' });
+  }
+});
+
 // Admin - Bulk Upload
 app.post('/api/students/upload', authenticateToken, requireRole(['ADMIN']), upload.single('file'), (req, res) => {
   if (!req.file) return res.status(400).json({ message: 'No file uploaded.' });
