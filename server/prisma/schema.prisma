@@ -1,0 +1,50 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  STUDENT
+  MENTOR
+  WARDEN
+  SECURITY
+  ADMIN
+}
+
+// New Status Enum for Out-Passes
+enum OutpassStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  passwordHash String
+  role         Role      @default(STUDENT)
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  
+  // A student can have multiple out-passes
+  outpasses    Outpass[] 
+}
+
+// New Outpass Table
+model Outpass {
+  id            String        @id @default(uuid())
+  studentId     String
+  destination   String
+  reason        String
+  departureDate DateTime
+  returnDate    DateTime
+  status        OutpassStatus @default(PENDING)
+  createdAt     DateTime      @default(now())
+
+  // Link this out-pass directly to the User table
+  student       User          @relation(fields: [studentId], references: [id])
+}
