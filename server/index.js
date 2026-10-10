@@ -42,7 +42,7 @@ app.post('/api/login', async (req, res) => {
     if (!validPassword) return res.status(401).json({ message: 'Invalid credentials.' });
     const token = jwt.sign({ userId: user.id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '8h' });
     res.json({ token, user: { id: user.id, email: user.email, role: user.role } });
-  } catch (error) { res.status(500).json({ message: 'Internal server error.' }); }
+    } catch (error) { console.error(error); res.status(500).json({ message: 'Internal server error.' }); }
 });
 
 // Admin - Bulk Upload
