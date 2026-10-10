@@ -21,7 +21,7 @@ export default function ManageStudents() {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.post('http://localhost:3000/api/students/upload', formData, {
+      const response = await axios.post(' https://mentor-outpass-system-v2.onrender.com/api/students/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
           'Authorization': `Bearer ${token}`

@@ -16,7 +16,7 @@ export default function AdminDashboard() {
     const fetchStudents = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await axios.get('http://localhost:3000/api/students', {
+        const response = await axios.get(' https://mentor-outpass-system-v2.onrender.com/api/students', {
           headers: { Authorization: `Bearer ${token}` }
         });
         setStudents(response.data);

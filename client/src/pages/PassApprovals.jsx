@@ -11,7 +11,7 @@ export default function PassApprovals() {
   const fetchApplications = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:3000/api/outpasses/all', {
+      const response = await axios.get(' https://mentor-outpass-system-v2.onrender.com/api/outpasses/all', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setApplications(response.data);
@@ -29,7 +29,7 @@ export default function PassApprovals() {
   const handleStatusUpdate = async (id, newStatus) => {
     try {
       const token = localStorage.getItem('token');
-      await axios.put(`http://localhost:3000/api/outpasses/${id}/status`, 
+      await axios.put(` https://mentor-outpass-system-v2.onrender.com/api/outpasses/${id}/status`, 
         { status: newStatus },
         { headers: { Authorization: `Bearer ${token}` } }
       );
