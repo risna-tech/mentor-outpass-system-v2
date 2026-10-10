@@ -24,7 +24,7 @@ export default function StudentDashboard() {
     setIsLoadingHistory(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(' https://mentor-outpass-system-v2.onrender.com/api/outpasses/me', {
+      const response = await axios.get('[https://mentor-outpass-system-v2.onrender.com/api/outpasses/me', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setOutpasses(response.data);
@@ -42,7 +42,7 @@ export default function StudentDashboard() {
 
     try {
       const token = localStorage.getItem('token');
-      await axios.post(' https://mentor-outpass-system-v2.onrender.com/api/outpasses', formData, {
+      await axios.post('[https://mentor-outpass-system-v2.onrender.com/api/outpasses', formData, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setStatus({ type: 'success', message: 'Application submitted! Pending approval.' });
