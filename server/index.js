@@ -104,23 +104,44 @@ app.get('/api/students', authenticateToken, requireRole(['ADMIN']), async (req, 
   } catch (error) { res.status(500).json({ message: 'Failed to fetch students.', error: error.message }); }
 });
 
-// Student - Submit Outpass
-app.post('/api/outpasses', authenticateToken, requireRole(['STUDENT']), async (req, res) => {
-  const { destination, reason, departureDate, returnDate } = req.body;
-  try {
-    const outpass = await prisma.outpass.create({
-      data: { studentId: req.user.userId, destination, reason, departureDate: new Date(departureDate), returnDate: new Date(returnDate), status: 'PENDING' }
-    });
-    res.json({ message: 'Application submitted successfully!', outpass });
-  } catch (error) { res.status(500).json({ message: 'Failed to submit application.', error: error.message }); }
-});
-
-// Student - Get My Outpasses
+// 1. Get Student's Outpass History
 app.get('/api/outpasses/me', authenticateToken, requireRole(['STUDENT']), async (req, res) => {
   try {
-    const outpasses = await prisma.outpass.findMany({ where: { studentId: req.user.userId }, orderBy: { createdAt: 'desc' } });
+    const outpasses = await prisma.outpass.findMany({
+      where: { studentId: req.user.userId },
+      orderBy: { createdAt: 'desc' } // Shows newest passes first
+    });
     res.json(outpasses);
-  } catch (error) { res.status(500).json({ message: 'Failed to fetch history.', error: error.message }); }
+  } catch (error) {
+    console.error('Error fetching history:', error);
+    res.status(500).json({ message: 'Internal server error.' });
+  }
+});
+
+// 2. Submit Outpass Request (Updated to plural '/api/outpasses' to match React)
+app.post('/api/outpasses', authenticateToken, requireRole(['STUDENT']), async (req, res) => {
+  const { destination, reason, departureDate, returnDate } = req.body;
+
+  if (!destination || !reason || !departureDate || !returnDate) {
+    return res.status(400).json({ message: 'All fields are required.' });
+  }
+
+  try {
+    const outpass = await prisma.outpass.create({
+      data: {
+        studentId: req.user.userId, 
+        destination,
+        reason,
+        departureDate: new Date(departureDate),
+        returnDate: new Date(returnDate),
+      },
+    });
+    
+    res.status(201).json({ message: 'Outpass requested successfully', outpass });
+  } catch (error) {
+    console.error('Error creating outpass:', error);
+    res.status(500).json({ message: 'Internal server error.' });
+  }
 });
 
 // --- ADMIN OUTPASS ROUTES ---
