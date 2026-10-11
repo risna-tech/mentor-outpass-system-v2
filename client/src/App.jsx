@@ -8,6 +8,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import GrievanceBoard from './pages/GrievanceBoard';
 import ParentApproval from './pages/ParentApproval'; // NEW IMPORT
 import WardenDashboard from './pages/WardenDashboard';
+import NoticeBoard from './pages/NoticeBoard';
 
 export default function App() {
   return (
@@ -53,10 +54,16 @@ export default function App() {
   element={<ProtectedRoute allowedRoles={['WARDEN', 'MENTOR', 'ADMIN']}><PassApprovals /></ProtectedRoute>} 
 />
 
-        {/* --------------- STUDENT ROUTES --------------- */}
+{/* --------------- STUDENT ROUTES --------------- */}
         <Route 
           path="/dashboard/student" 
           element={<ProtectedRoute allowedRoles={['STUDENT']}><StudentDashboard /></ProtectedRoute>} 
+        />
+
+        {/* --------------- NOTICE BOARD ROUTE --------------- */}
+        <Route 
+          path="/dashboard/notices" 
+          element={<ProtectedRoute allowedRoles={['STUDENT', 'WARDEN', 'ADMIN', 'MENTOR']}><NoticeBoard /></ProtectedRoute>} 
         />
       </Routes>
     </BrowserRouter>
