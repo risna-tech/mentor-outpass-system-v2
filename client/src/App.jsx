@@ -10,6 +10,7 @@ import ParentApproval from './pages/ParentApproval'; // NEW IMPORT
 import WardenDashboard from './pages/WardenDashboard';
 import NoticeBoard from './pages/NoticeBoard';
 import MentorDashboard from './pages/MentorDashboard';
+import SecurityDashboard from './pages/SecurityDashboard';
 
 export default function App() {
   return (
@@ -64,6 +65,12 @@ export default function App() {
         <Route 
           path="/dashboard/student" 
           element={<ProtectedRoute allowedRoles={['STUDENT']}><StudentDashboard /></ProtectedRoute>} 
+        />
+
+        {/* ---------------- SECURITY ROUTES ---------------- */}
+        <Route 
+          path="/dashboard/security" 
+          element={<ProtectedRoute allowedRoles={['SECURITY', 'ADMIN']}><SecurityDashboard /></ProtectedRoute>} 
         />
 
         {/* --------------- NOTICE BOARD ROUTE --------------- */}
