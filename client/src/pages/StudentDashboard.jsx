@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { FilePlus, Clock, LogOut, User, CheckCircle, AlertTriangle, Loader2, MapPin, QrCode, AlertCircle, Download } from 'lucide-react';
 import { LogOut } from 'lucide-react'; // Add this to your existing lucide-react import
+import { LogOut, Copy } from 'lucide-react'; // Add Copy here (along with whatever else you have)
 
 export default function StudentDashboard() {
   const navigate = useNavigate();
@@ -102,6 +103,13 @@ export default function StudentDashboard() {
     navigate('/login');
  };
 
+ const handleCopyLink = (passId) => {
+    // Generates the exact URL for the parent approval page
+    const approvalLink = `${window.location.origin}/approve/${passId}`;
+    navigator.clipboard.writeText(approvalLink);
+    alert("Approval link copied to clipboard! You can now paste it to your parent.");
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 flex">
       <aside className="w-64 bg-navy text-ivory flex flex-col hidden md:flex">
@@ -134,6 +142,12 @@ export default function StudentDashboard() {
           </button> 
             Notice Board
           </button>
+          <button 
+  onClick={() => handleCopyLink(pass.id)}
+  className="flex items-center px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors border border-gray-300 ml-2"
+>
+  <Copy className="w-4 h-4 mr-1" /> Copy Link
+</button>
         </nav>
 
         <div className="p-4 border-t border-gray-700">
