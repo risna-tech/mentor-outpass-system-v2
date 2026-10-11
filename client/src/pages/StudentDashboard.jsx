@@ -121,6 +121,13 @@ export default function StudentDashboard() {
           <button onClick={() => navigate('/dashboard/grievances')} className="w-full flex items-center px-4 py-3 rounded-lg transition-colors hover:bg-gray-800 text-gray-300">
             <AlertCircle className="w-5 h-5 mr-3 text-orange-500" /> Report Grievance
           </button>
+
+          <button 
+            onClick={() => navigate('/dashboard/notices')}
+            className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-sm font-medium transition-colors ml-4"
+          >
+            Notice Board
+          </button>
         </nav>
 
         <div className="p-4 border-t border-gray-700">
