@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { ClipboardCheck, MessageSquareWarning } from 'lucide-react';
 import { ClipboardCheck, MessageSquareWarning, Megaphone } from 'lucide-react';
 import { ClipboardCheck, MessageSquareWarning, Megaphone, LogOut } from 'lucide-react';
+import { ClipboardCheck, MessageSquareWarning, Megaphone, LogOut, Users, Clock, FileText } from 'lucide-react';
 
 export default function WardenDashboard() {
   const navigate = useNavigate();
@@ -86,6 +87,38 @@ return (
             </div>
             <h2 className="text-xl font-bold text-gray-800 mb-2">Notice Board</h2>
             <p className="text-gray-500 text-sm">Post official announcements and updates for all students.</p>
+          </div>
+        </div>
+        {/* Quick Stat Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center">
+            <div className="bg-blue-50 p-3 rounded-lg mr-4">
+              <Users className="w-6 h-6 text-blue-600" />
+            </div>
+            <div>
+              <p className="text-sm text-gray-500 font-medium">Total Students</p>
+              <p className="text-2xl font-bold text-gray-900">124</p>
+            </div>
+          </div>
+          
+          <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center">
+            <div className="bg-orange-50 p-3 rounded-lg mr-4">
+              <Clock className="w-6 h-6 text-orange-600" />
+            </div>
+            <div>
+              <p className="text-sm text-gray-500 font-medium">Pending Requests</p>
+              <p className="text-2xl font-bold text-gray-900">12</p>
+            </div>
+          </div>
+
+          <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center">
+            <div className="bg-emerald-50 p-3 rounded-lg mr-4">
+              <FileText className="w-6 h-6 text-emerald-600" />
+            </div>
+            <div>
+              <p className="text-sm text-gray-500 font-medium">Active Outpasses</p>
+              <p className="text-2xl font-bold text-gray-900">8</p>
+            </div>
           </div>
         </div>
         </div>
