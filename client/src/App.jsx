@@ -5,6 +5,7 @@ import ManageStudents from './pages/ManageStudents';
 import StudentDashboard from './pages/StudentDashboard';
 import PassApprovals from './pages/PassApprovals';
 import ProtectedRoute from './components/ProtectedRoute';
+import GrievanceBoard from './pages/GrievanceBoard';
 
 export default function App() {
   return (
@@ -12,6 +13,10 @@ export default function App() {
       <Routes>
         {/* Redirect root to login page */}
         <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route 
+  path="/dashboard/grievances" 
+  element={<ProtectedRoute allowedRoles={['STUDENT', 'WARDEN', 'ADMIN', 'MENTOR']}><GrievanceBoard /></ProtectedRoute>} 
+/>
         
         {/* Public Login */}
         <Route path="/login" element={<Login />} />
