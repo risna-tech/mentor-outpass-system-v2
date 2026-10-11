@@ -42,18 +42,82 @@ app.post('/api/login', async (req, res) => {
     if (!validPassword) return res.status(401).json({ message: 'Invalid credentials.' });
     const token = jwt.sign({ userId: user.id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '8h' });
     res.json({ token, user: { id: user.id, email: user.email, role: user.role } });
-    } catch (error) { console.error(error); res.status(500).json({ message: 'Internal server error.' }); }
+  } catch (error) { console.error(error); res.status(500).json({ message: 'Internal server error.' }); }
 });
+
+// ==========================================
+// OUTPASS ROUTES (Updated for Exact Timings & WhatsApp)
+// ==========================================
+
+// 1. Submit Outpass Request (STUDENT)
+app.post('/api/outpasses', authenticateToken, requireRole(['STUDENT']), async (req, res) => {
+  const { 
+    leaveCategory, destination, reason, 
+    departureDate, departureTime, 
+    returnDate, returnTime, 
+    parentPhone 
+  } = req.body;
+
+  if (!destination || !reason || !departureDate || !returnDate || !parentPhone) {
+    return res.status(400).json({ message: 'Missing required fields including Parent Phone.' });
+  }
+
+  try {
+    const outpass = await prisma.outpass.create({
+      data: {
+        studentId: req.user.userId, 
+        leaveCategory: leaveCategory || 'SHORT_LEAVE',
+        destination,
+        reason,
+        departureDate: new Date(departureDate),
+        departureTime, // e.g., "10:00"
+        returnDate: new Date(returnDate),
+        returnTime,    // e.g., "17:00"
+        // Force the master status to PENDING, awaiting parent verification
+        status: 'PENDING',
+        parentStatus: 'PENDING', 
+        mentorStatus: 'PENDING',
+        wardenStatus: 'PENDING'
+      },
+    });
+
+    // Also update the student's profile with the parent's phone number for future use
+    await prisma.user.update({
+      where: { id: req.user.userId },
+      data: { parentPhone }
+    });
+    
+    // NOTE: WhatsApp API trigger will be added here in Phase 2
+    
+    res.status(201).json({ message: 'Outpass requested successfully', outpass });
+  } catch (error) {
+    console.error('Error creating outpass:', error);
+    res.status(500).json({ message: 'Internal server error.' });
+  }
+});
+
+// 2. Get Student's Outpass History (STUDENT)
+app.get('/api/outpasses/me', authenticateToken, requireRole(['STUDENT']), async (req, res) => {
+  try {
+    const outpasses = await prisma.outpass.findMany({
+      where: { studentId: req.user.userId },
+      orderBy: { createdAt: 'desc' }
+    });
+    res.json(outpasses);
+  } catch (error) {
+    console.error('Error fetching history:', error);
+    res.status(500).json({ message: 'Internal server error.' });
+  }
+});
+
 // 3. Get All Outpasses (For Wardens, Mentors, and Admins)
 app.get('/api/outpasses/all', authenticateToken, requireRole(['WARDEN', 'MENTOR', 'ADMIN']), async (req, res) => {
   try {
     const outpasses = await prisma.outpass.findMany({
       include: {
-        student: {
-          select: { email: true } // Grabs the student's email to show the Warden
-        }
+        student: { select: { email: true, parentPhone: true } } 
       },
-      orderBy: { createdAt: 'desc' } // Shows newest requests at the top
+      orderBy: { createdAt: 'desc' } 
     });
     res.json(outpasses);
   } catch (error) {
@@ -67,7 +131,6 @@ app.put('/api/outpasses/:id/status', authenticateToken, requireRole(['WARDEN', '
   const { id } = req.params;
   const { status } = req.body;
 
-  // Security check: Only allow valid statuses
   if (!['APPROVED', 'REJECTED'].includes(status)) {
     return res.status(400).json({ message: 'Invalid status.' });
   }
@@ -75,7 +138,7 @@ app.put('/api/outpasses/:id/status', authenticateToken, requireRole(['WARDEN', '
   try {
     const updatedOutpass = await prisma.outpass.update({
       where: { id },
-      data: { status },
+      data: { status, wardenStatus: status },
     });
     res.json({ message: `Outpass ${status.toLowerCase()} successfully`, outpass: updatedOutpass });
   } catch (error) {
@@ -84,35 +147,10 @@ app.put('/api/outpasses/:id/status', authenticateToken, requireRole(['WARDEN', '
   }
 });
 
-// Submit Outpass Request
-app.post('/api/outpass', authenticateToken, requireRole(['STUDENT']), async (req, res) => {
-  const { destination, reason, departureDate, returnDate } = req.body;
+// ==========================================
+// ADMIN USER MANAGEMENT ROUTES
+// ==========================================
 
-  if (!destination || !reason || !departureDate || !returnDate) {
-    return res.status(400).json({ message: 'All fields are required.' });
-  }
-
-  try {
-    const outpass = await prisma.outpass.create({
-      data: {
-        // req.user.userId is securely pulled from your JWT token middleware
-        studentId: req.user.userId, 
-        destination,
-        reason,
-        // Prisma requires standard ISO Date objects
-        departureDate: new Date(departureDate),
-        returnDate: new Date(returnDate),
-      },
-    });
-    
-    res.status(201).json({ message: 'Outpass requested successfully', outpass });
-  } catch (error) {
-    console.error('Error creating outpass:', error);
-    res.status(500).json({ message: 'Internal server error.' });
-  }
-});
-
-// Admin - Bulk Upload
 app.post('/api/students/upload', authenticateToken, requireRole(['ADMIN']), upload.single('file'), (req, res) => {
   if (!req.file) return res.status(400).json({ message: 'No file uploaded.' });
   const results = [];
@@ -135,7 +173,6 @@ app.post('/api/students/upload', authenticateToken, requireRole(['ADMIN']), uplo
   });
 });
 
-// Admin - Get Students
 app.get('/api/students', authenticateToken, requireRole(['ADMIN']), async (req, res) => {
   try {
     const students = await prisma.user.findMany({ where: { role: 'STUDENT' }, orderBy: { createdAt: 'desc' } });
@@ -143,88 +180,15 @@ app.get('/api/students', authenticateToken, requireRole(['ADMIN']), async (req, 
   } catch (error) { res.status(500).json({ message: 'Failed to fetch students.', error: error.message }); }
 });
 
-// 1. Get Student's Outpass History
-app.get('/api/outpasses/me', authenticateToken, requireRole(['STUDENT']), async (req, res) => {
-  try {
-    const outpasses = await prisma.outpass.findMany({
-      where: { studentId: req.user.userId },
-      orderBy: { createdAt: 'desc' } // Shows newest passes first
-    });
-    res.json(outpasses);
-  } catch (error) {
-    console.error('Error fetching history:', error);
-    res.status(500).json({ message: 'Internal server error.' });
-  }
-});
-
-// 2. Submit Outpass Request (Updated to plural '/api/outpasses' to match React)
-app.post('/api/outpasses', authenticateToken, requireRole(['STUDENT']), async (req, res) => {
-  const { destination, reason, departureDate, returnDate } = req.body;
-
-  if (!destination || !reason || !departureDate || !returnDate) {
-    return res.status(400).json({ message: 'All fields are required.' });
-  }
-
-  try {
-    const outpass = await prisma.outpass.create({
-      data: {
-        studentId: req.user.userId, 
-        destination,
-        reason,
-        departureDate: new Date(departureDate),
-        returnDate: new Date(returnDate),
-      },
-    });
-    
-    res.status(201).json({ message: 'Outpass requested successfully', outpass });
-  } catch (error) {
-    console.error('Error creating outpass:', error);
-    res.status(500).json({ message: 'Internal server error.' });
-  }
-});
-
-// --- ADMIN OUTPASS ROUTES ---
-
-// Admin - Get All Outpasses (THIS IS THE ROUTE THAT WAS MISSING/FAILING)
-app.get('/api/outpasses/all', authenticateToken, requireRole(['ADMIN']), async (req, res) => {
-  try {
-    const outpasses = await prisma.outpass.findMany({
-      include: { student: { select: { email: true } } },
-      orderBy: { createdAt: 'desc' }
-    });
-    res.json(outpasses);
-  } catch (error) { res.status(500).json({ message: 'Failed to fetch applications.', error: error.message }); }
-});
-
-// Admin - Update Outpass Status
-app.put('/api/outpasses/:id/status', authenticateToken, requireRole(['ADMIN']), async (req, res) => {
-  const { status } = req.body;
-  try {
-    const outpass = await prisma.outpass.update({
-      where: { id: req.params.id },
-      data: { status }
-    });
-    res.json({ message: `Pass ${status.toLowerCase()} successfully.`, outpass });
-  } catch (error) { res.status(500).json({ message: 'Failed to update status.', error: error.message }); }
-});
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server securely initialized. Listening on port ${PORT}`));
-
 // ==========================================
 // ANONYMOUS GRIEVANCE & CHAT ROUTES
 // ==========================================
 
-// 1. Submit a new anonymous grievance (Students)
 app.post('/api/grievances', authenticateToken, async (req, res) => {
   const { category, message } = req.body;
   try {
-    // We purposefully do NOT save req.user.userId here. 100% anonymous.
     const grievance = await prisma.grievance.create({
-      data: {
-        category,
-        message,
-      },
+      data: { category, message },
     });
     res.json({ message: 'Grievance submitted anonymously!', grievance });
   } catch (error) {
@@ -233,11 +197,10 @@ app.post('/api/grievances', authenticateToken, async (req, res) => {
   }
 });
 
-// 2. Fetch all grievances (Visible to everyone)
 app.get('/api/grievances', authenticateToken, async (req, res) => {
   try {
     const grievances = await prisma.grievance.findMany({
-      orderBy: { createdAt: 'desc' }, // Newest issues at the top
+      orderBy: { createdAt: 'desc' },
     });
     res.json(grievances);
   } catch (error) {
@@ -246,7 +209,6 @@ app.get('/api/grievances', authenticateToken, async (req, res) => {
   }
 });
 
-// 3. Reply to a grievance (Wardens and Admins Only)
 app.put('/api/grievances/:id/reply', authenticateToken, requireRole(['WARDEN', 'ADMIN', 'MENTOR']), async (req, res) => {
   const { id } = req.params;
   const { reply, status } = req.body;
@@ -263,7 +225,6 @@ app.put('/api/grievances/:id/reply', authenticateToken, requireRole(['WARDEN', '
   }
 });
 
-// Temporary Route: Create a Warden Account
 app.post('/api/setup-warden', async (req, res) => {
   try {
     const exists = await prisma.user.findUnique({ where: { email: 'warden@mentor.com' } });
@@ -271,11 +232,7 @@ app.post('/api/setup-warden', async (req, res) => {
 
     const hashedPassword = await bcrypt.hash('Warden123!', 10);
     await prisma.user.create({
-      data: {
-        email: 'warden@mentor.com',
-        passwordHash: hashedPassword,
-        role: 'WARDEN'
-      }
+      data: { email: 'warden@mentor.com', passwordHash: hashedPassword, role: 'WARDEN' }
     });
     res.json({ message: 'Warden account created successfully!' });
   } catch (error) {
@@ -283,3 +240,6 @@ app.post('/api/setup-warden', async (req, res) => {
     res.status(500).json({ error: 'Failed to create warden' });
   }
 });
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Server securely initialized. Listening on port ${PORT}`));
