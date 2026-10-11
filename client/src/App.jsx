@@ -1,4 +1,3 @@
-// TEST UPDATE
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
 import AdminDashboard from './pages/AdminDashboard';
@@ -7,6 +6,7 @@ import StudentDashboard from './pages/StudentDashboard';
 import PassApprovals from './pages/PassApprovals';
 import ProtectedRoute from './components/ProtectedRoute';
 import GrievanceBoard from './pages/GrievanceBoard';
+import ParentApproval from './pages/ParentApproval'; // NEW IMPORT
 
 export default function App() {
   return (
@@ -14,13 +14,17 @@ export default function App() {
       <Routes>
         {/* Redirect root to login page */}
         <Route path="/" element={<Navigate to="/login" replace />} />
+        
         <Route 
-  path="/dashboard/grievances" 
-  element={<ProtectedRoute allowedRoles={['STUDENT', 'WARDEN', 'ADMIN', 'MENTOR']}><GrievanceBoard /></ProtectedRoute>} 
-/>
+          path="/dashboard/grievances" 
+          element={<ProtectedRoute allowedRoles={['STUDENT', 'WARDEN', 'ADMIN', 'MENTOR']}><GrievanceBoard /></ProtectedRoute>} 
+        />
         
         {/* Public Login */}
         <Route path="/login" element={<Login />} />
+
+        {/* PUBLIC PARENT APPROVAL ROUTE (No login required) */}
+        <Route path="/approve/:id" element={<ParentApproval />} />
         
         {/* ---------------- ADMIN ROUTES ---------------- */}
         <Route 
