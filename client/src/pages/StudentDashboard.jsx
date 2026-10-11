@@ -11,7 +11,7 @@ export default function StudentDashboard() {
   const [activeTab, setActiveTab] = useState('history'); 
   const [outpasses, setOutpasses] = useState([]);
   
-  // NEW: Added leaveCategory, exact times, and parentPhone to state
+  // Added parentType to state
   const [formData, setFormData] = useState({ 
     leaveCategory: 'SHORT_LEAVE',
     destination: '', 
@@ -20,6 +20,7 @@ export default function StudentDashboard() {
     departureTime: '',
     returnDate: '',
     returnTime: '',
+    parentType: 'Father', // New field
     parentPhone: '' 
   });
   
@@ -53,16 +54,16 @@ export default function StudentDashboard() {
 
     try {
       const token = localStorage.getItem('token');
-      // Submitting the new advanced payload to the backend
+      
+      // Sending parentType along with the rest of the form data
       await axios.post('https://mentor-outpass-system-v2.onrender.com/api/outpasses', formData, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setStatus({ type: 'success', message: 'Application submitted! Awaiting Parent WhatsApp Verification.' });
       
-      // Reset form
       setFormData({ 
         leaveCategory: 'SHORT_LEAVE', destination: '', reason: '', 
-        departureDate: '', departureTime: '', returnDate: '', returnTime: '', parentPhone: '' 
+        departureDate: '', departureTime: '', returnDate: '', returnTime: '', parentType: 'Father', parentPhone: '' 
       });
       setTimeout(() => setActiveTab('history'), 3000);
     } catch (err) {
@@ -82,7 +83,6 @@ export default function StudentDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar Navigation */}
       <aside className="w-64 bg-navy text-ivory flex flex-col hidden md:flex">
         <div className="p-6 border-b border-gray-700">
           <h2 className="text-xl font-bold tracking-wider">STUDENT PORTAL</h2>
@@ -109,7 +109,6 @@ export default function StudentDashboard() {
         </div>
       </aside>
 
-      {/* Main Content Area */}
       <main className="flex-1 flex flex-col">
         <header className="bg-white shadow-sm border-b border-gray-200 px-8 py-4 flex justify-between items-center">
           <h1 className="text-2xl font-semibold text-navy">
@@ -122,7 +121,6 @@ export default function StudentDashboard() {
 
         <div className="p-8 flex-1 overflow-auto bg-ivory">
           
-          {/* Dynamic Stat Cards */}
           {activeTab === 'history' && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
               <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm border-l-4 border-l-orange-500">
@@ -137,7 +135,6 @@ export default function StudentDashboard() {
           )}
 
           {activeTab === 'apply' ? (
-            /* ADVANCED APPLICATION FORM */
             <div className="max-w-2xl bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-12">
               <div className="bg-navy p-6">
                 <h2 className="text-lg font-bold text-ivory flex items-center">
@@ -153,7 +150,6 @@ export default function StudentDashboard() {
                 )}
                 
                 <form onSubmit={handleApply} className="space-y-6">
-                  {/* Leave Category */}
                   <div>
                     <label className="block text-sm font-medium text-navy mb-1">Leave Category</label>
                     <select 
@@ -168,14 +164,28 @@ export default function StudentDashboard() {
                     </select>
                   </div>
 
+                  <div>
+                    <label className="block text-sm font-medium text-navy mb-1">Destination</label>
+                    <input type="text" required value={formData.destination} onChange={(e) => setFormData({...formData, destination: e.target.value})} className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal outline-none" placeholder="e.g., Hometown, Hospital" />
+                  </div>
+
+                  {/* NEW: Father/Mother Selection & Number Input */}
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-navy mb-1">Destination</label>
-                      <input type="text" required value={formData.destination} onChange={(e) => setFormData({...formData, destination: e.target.value})} className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal outline-none" placeholder="e.g., Hometown, Hospital" />
+                      <label className="block text-sm font-medium text-navy mb-1">Approving Parent</label>
+                      <select 
+                        required
+                        value={formData.parentType} 
+                        onChange={(e) => setFormData({...formData, parentType: e.target.value})} 
+                        className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal outline-none"
+                      >
+                        <option value="Father">Father</option>
+                        <option value="Mother">Mother</option>
+                      </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-navy mb-1">Parent's WhatsApp No.</label>
-                      <input type="tel" required value={formData.parentPhone} onChange={(e) => setFormData({...formData, parentPhone: e.target.value})} className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal outline-none" placeholder="e.g., 8095446482" />
+                      <label className="block text-sm font-medium text-navy mb-1">{formData.parentType}'s WhatsApp No.</label>
+                      <input type="tel" required value={formData.parentPhone} onChange={(e) => setFormData({...formData, parentPhone: e.target.value})} className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal outline-none" placeholder="e.g., +918095446482" />
                     </div>
                   </div>
 
@@ -184,7 +194,6 @@ export default function StudentDashboard() {
                     <textarea required rows="2" value={formData.reason} onChange={(e) => setFormData({...formData, reason: e.target.value})} className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal outline-none" placeholder="Provide a valid reason..."></textarea>
                   </div>
                   
-                  {/* Departure & Return with Exact Times */}
                   <div className="grid grid-cols-2 gap-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
                     <div className="space-y-3">
                       <h4 className="font-semibold text-navy text-sm border-b pb-2">Departure Details</h4>
@@ -218,7 +227,6 @@ export default function StudentDashboard() {
               </div>
             </div>
           ) : (
-            /* HISTORY TABLE WITH DOWNLOAD PASS OPTION */
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-12">
               <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
                 <h3 className="text-lg font-medium text-navy">My Applications</h3>
