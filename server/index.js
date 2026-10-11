@@ -9,6 +9,7 @@ const multer = require('multer');
 const fs = require('fs');
 const csv = require('csv-parser');
 const { PrismaClient } = require('@prisma/client');
+const twilio = require('twilio'); // NEW: Twilio imported
 const { authenticateToken, requireRole } = require('./middleware/auth');
 
 dotenv.config();
@@ -16,6 +17,9 @@ dotenv.config();
 const app = express();
 const prisma = new PrismaClient();
 const upload = multer({ dest: 'uploads/' });
+
+// NEW: Initialize Twilio Client using your Environment Variables
+const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 
 app.use(helmet());
 app.use(cors({
@@ -46,16 +50,15 @@ app.post('/api/login', async (req, res) => {
 });
 
 // ==========================================
-// OUTPASS ROUTES (Updated for Exact Timings & WhatsApp)
+// OUTPASS ROUTES (Twilio Integration added)
 // ==========================================
 
-// 1. Submit Outpass Request (STUDENT)
 app.post('/api/outpasses', authenticateToken, requireRole(['STUDENT']), async (req, res) => {
   const { 
     leaveCategory, destination, reason, 
     departureDate, departureTime, 
     returnDate, returnTime, 
-    parentPhone 
+    parentType, parentPhone 
   } = req.body;
 
   if (!destination || !reason || !departureDate || !returnDate || !parentPhone) {
@@ -70,10 +73,9 @@ app.post('/api/outpasses', authenticateToken, requireRole(['STUDENT']), async (r
         destination,
         reason,
         departureDate: new Date(departureDate),
-        departureTime, // e.g., "10:00"
+        departureTime, 
         returnDate: new Date(returnDate),
-        returnTime,    // e.g., "17:00"
-        // Force the master status to PENDING, awaiting parent verification
+        returnTime,    
         status: 'PENDING',
         parentStatus: 'PENDING', 
         mentorStatus: 'PENDING',
@@ -81,13 +83,26 @@ app.post('/api/outpasses', authenticateToken, requireRole(['STUDENT']), async (r
       },
     });
 
-    // Also update the student's profile with the parent's phone number for future use
     await prisma.user.update({
       where: { id: req.user.userId },
       data: { parentPhone }
     });
     
-    // NOTE: WhatsApp API trigger will be added here in Phase 2
+    // NEW: Trigger the automated WhatsApp Message
+    try {
+      const formattedPhone = parentPhone.startsWith('+') ? parentPhone : `+91${parentPhone}`;
+      
+      const msgText = `*MENTOR HOSTEL SYSTEM*\n\nDear ${parentType || 'Parent'},\nYour ward has requested an out-pass.\n\n*Destination:* ${destination}\n*Reason:* ${reason}\n*Leaves:* ${new Date(departureDate).toLocaleDateString()} at ${departureTime}\n*Returns:* ${new Date(returnDate).toLocaleDateString()} at ${returnTime}\n\n*Reply with:*\nAPPROVE ${outpass.id}\nREJECT ${outpass.id}`;
+      
+      await twilioClient.messages.create({
+        body: msgText,
+        from: process.env.TWILIO_WHATSAPP_NUMBER,
+        to: `whatsapp:${formattedPhone}`
+      });
+      console.log('WhatsApp message sent for outpass:', outpass.id);
+    } catch (twilioError) {
+      console.error('Failed to send Twilio message:', twilioError);
+    }
     
     res.status(201).json({ message: 'Outpass requested successfully', outpass });
   } catch (error) {
@@ -96,7 +111,6 @@ app.post('/api/outpasses', authenticateToken, requireRole(['STUDENT']), async (r
   }
 });
 
-// 2. Get Student's Outpass History (STUDENT)
 app.get('/api/outpasses/me', authenticateToken, requireRole(['STUDENT']), async (req, res) => {
   try {
     const outpasses = await prisma.outpass.findMany({
@@ -110,13 +124,10 @@ app.get('/api/outpasses/me', authenticateToken, requireRole(['STUDENT']), async 
   }
 });
 
-// 3. Get All Outpasses (For Wardens, Mentors, and Admins)
 app.get('/api/outpasses/all', authenticateToken, requireRole(['WARDEN', 'MENTOR', 'ADMIN']), async (req, res) => {
   try {
     const outpasses = await prisma.outpass.findMany({
-      include: {
-        student: { select: { email: true, parentPhone: true } } 
-      },
+      include: { student: { select: { email: true, parentPhone: true } } },
       orderBy: { createdAt: 'desc' } 
     });
     res.json(outpasses);
@@ -126,7 +137,6 @@ app.get('/api/outpasses/all', authenticateToken, requireRole(['WARDEN', 'MENTOR'
   }
 });
 
-// 4. Update Outpass Status (Approve or Reject)
 app.put('/api/outpasses/:id/status', authenticateToken, requireRole(['WARDEN', 'MENTOR', 'ADMIN']), async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
@@ -148,7 +158,7 @@ app.put('/api/outpasses/:id/status', authenticateToken, requireRole(['WARDEN', '
 });
 
 // ==========================================
-// ADMIN USER MANAGEMENT ROUTES
+// ADMIN USER MANAGEMENT & GRIEVANCES
 // ==========================================
 
 app.post('/api/students/upload', authenticateToken, requireRole(['ADMIN']), upload.single('file'), (req, res) => {
@@ -179,10 +189,6 @@ app.get('/api/students', authenticateToken, requireRole(['ADMIN']), async (req, 
     res.json(students);
   } catch (error) { res.status(500).json({ message: 'Failed to fetch students.', error: error.message }); }
 });
-
-// ==========================================
-// ANONYMOUS GRIEVANCE & CHAT ROUTES
-// ==========================================
 
 app.post('/api/grievances', authenticateToken, async (req, res) => {
   const { category, message } = req.body;
