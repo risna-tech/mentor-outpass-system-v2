@@ -32,6 +32,12 @@ export default function App() {
           element={<ProtectedRoute allowedRoles={['ADMIN']}><PassApprovals /></ProtectedRoute>} 
         />
 
+        {/* ---------------- WARDEN/MENTOR ROUTES ---------------- */}
+        <Route 
+          path="/dashboard/warden" 
+          element={<ProtectedRoute allowedRoles={['WARDEN', 'MENTOR', 'ADMIN']}><PassApprovals /></ProtectedRoute>} 
+        />
+
         {/* --------------- STUDENT ROUTES --------------- */}
         <Route 
           path="/dashboard/student" 
