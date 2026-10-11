@@ -9,7 +9,7 @@ const multer = require('multer');
 const fs = require('fs');
 const csv = require('csv-parser');
 const { PrismaClient } = require('@prisma/client');
-const twilio = require('twilio'); // NEW: Twilio imported
+const twilio = require('twilio');
 const { authenticateToken, requireRole } = require('./middleware/auth');
 
 dotenv.config();
@@ -18,7 +18,6 @@ const app = express();
 const prisma = new PrismaClient();
 const upload = multer({ dest: 'uploads/' });
 
-// NEW: Initialize Twilio Client using your Environment Variables
 const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 
 app.use(helmet());
@@ -32,10 +31,8 @@ app.use(cors({
 app.use(express.json());
 app.use(morgan('dev'));
 
-// Health Check
 app.get('/api/health', async (req, res) => res.json({ status: 'success' }));
 
-// Secure Login
 app.post('/api/login', async (req, res) => {
   const { email, password, role } = req.body;
   if (!email || !password || !role) return res.status(400).json({ message: 'Missing fields.' });
@@ -50,7 +47,7 @@ app.post('/api/login', async (req, res) => {
 });
 
 // ==========================================
-// OUTPASS ROUTES (Twilio Integration added)
+// OUTPASS ROUTES (Custom Message Restored)
 // ==========================================
 
 app.post('/api/outpasses', authenticateToken, requireRole(['STUDENT']), async (req, res) => {
@@ -88,22 +85,28 @@ app.post('/api/outpasses', authenticateToken, requireRole(['STUDENT']), async (r
       data: { parentPhone }
     });
     
-// NEW: Trigger the automated WhatsApp Message
+    // CUSTOM TWILIO MESSAGE BLOCK
     try {
       const formattedPhone = parentPhone.startsWith('+') ? parentPhone : `+91${parentPhone}`;
       
       const msgText = `*MENTOR HOSTEL SYSTEM*\n\nDear ${parentType || 'Parent'},\nYour ward has requested an out-pass.\n\n*Destination:* ${destination}\n*Reason:* ${reason}\n*Leaves:* ${new Date(departureDate).toLocaleDateString()} at ${departureTime}\n*Returns:* ${new Date(returnDate).toLocaleDateString()} at ${returnTime}\n\n*Reply with:*\nAPPROVE ${outpass.id}\nREJECT ${outpass.id}`;
       
       await twilioClient.messages.create({
-        body: msgText,        // We are back to using your custom text!
+        body: msgText,
         from: process.env.TWILIO_WHATSAPP_NUMBER,
         to: `whatsapp:${formattedPhone}`
       });
-      
       console.log('WhatsApp message sent for outpass:', outpass.id);
     } catch (twilioError) {
       console.error('Failed to send Twilio message:', twilioError);
     }
+    
+    res.status(201).json({ message: 'Outpass requested successfully', outpass });
+  } catch (error) {
+    console.error('Error creating outpass:', error);
+    res.status(500).json({ message: 'Internal server error.' });
+  }
+});
 
 app.get('/api/outpasses/me', authenticateToken, requireRole(['STUDENT']), async (req, res) => {
   try {
@@ -150,10 +153,6 @@ app.put('/api/outpasses/:id/status', authenticateToken, requireRole(['WARDEN', '
     res.status(500).json({ message: 'Internal server error.' });
   }
 });
-
-// ==========================================
-// ADMIN USER MANAGEMENT & GRIEVANCES
-// ==========================================
 
 app.post('/api/students/upload', authenticateToken, requireRole(['ADMIN']), upload.single('file'), (req, res) => {
   if (!req.file) return res.status(400).json({ message: 'No file uploaded.' });
