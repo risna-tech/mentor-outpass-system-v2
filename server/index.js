@@ -9,7 +9,6 @@ const multer = require('multer');
 const fs = require('fs');
 const csv = require('csv-parser');
 const { PrismaClient } = require('@prisma/client');
-const twilio = require('twilio');
 const { authenticateToken, requireRole } = require('./middleware/auth');
 
 dotenv.config();
@@ -17,8 +16,6 @@ dotenv.config();
 const app = express();
 const prisma = new PrismaClient();
 const upload = multer({ dest: 'uploads/' });
-
-const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 
 app.use(helmet());
 app.use(cors({
@@ -47,7 +44,46 @@ app.post('/api/login', async (req, res) => {
 });
 
 // ==========================================
-// OUTPASS ROUTES (Custom Message Restored)
+// PUBLIC PARENT APPROVAL ROUTES
+// ==========================================
+
+// 1. Fetch outpass details for the parent page (No login required)
+app.get('/api/outpasses/public/:id', async (req, res) => {
+  try {
+    const outpass = await prisma.outpass.findUnique({
+      where: { id: req.params.id },
+      include: { student: { select: { email: true } } }
+    });
+    if (!outpass) return res.status(404).json({ message: 'Outpass not found' });
+    res.json(outpass);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// 2. Parent clicks Approve or Reject (No login required)
+app.put('/api/outpasses/public/:id/status', async (req, res) => {
+  const { status } = req.body;
+  if (!['APPROVED', 'REJECTED'].includes(status)) {
+    return res.status(400).json({ message: 'Invalid status.' });
+  }
+
+  try {
+    const updatedOutpass = await prisma.outpass.update({
+      where: { id: req.params.id },
+      data: { 
+        parentStatus: status,
+        status: status === 'REJECTED' ? 'REJECTED' : 'PENDING' 
+      },
+    });
+    res.json({ message: `Outpass ${status.toLowerCase()} successfully`, outpass: updatedOutpass });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// ==========================================
+// OUTPASS ROUTES (Twilio Removed)
 // ==========================================
 
 app.post('/api/outpasses', authenticateToken, requireRole(['STUDENT']), async (req, res) => {
@@ -85,23 +121,7 @@ app.post('/api/outpasses', authenticateToken, requireRole(['STUDENT']), async (r
       data: { parentPhone }
     });
     
-// NEW: Trigger the automated WhatsApp Message (Custom Text Restored!)
-    try {
-      const formattedPhone = parentPhone.startsWith('+') ? parentPhone : `+91${parentPhone}`;
-      
-      const msgText = `*MENTOR HOSTEL SYSTEM*\n\nDear ${parentType || 'Parent'},\nYour ward has requested an out-pass.\n\n*Destination:* ${destination}\n*Reason:* ${reason}\n*Leaves:* ${new Date(departureDate).toLocaleDateString()} at ${departureTime}\n*Returns:* ${new Date(returnDate).toLocaleDateString()} at ${returnTime}\n\n*Reply with:*\nAPPROVE ${outpass.id}\nREJECT ${outpass.id}`;
-      
-      await twilioClient.messages.create({
-        body: msgText, // We removed contentSid and put your custom body back!
-        from: process.env.TWILIO_WHATSAPP_NUMBER,
-        to: `whatsapp:${formattedPhone}`
-      });
-      
-      console.log('WhatsApp message sent for outpass:', outpass.id);
-    } catch (twilioError) {
-      console.error('Failed to send Twilio message:', twilioError);
-    }   
-    
+    // Twilio logic removed! Simply return the success response.
     res.status(201).json({ message: 'Outpass requested successfully', outpass });
   } catch (error) {
     console.error('Error creating outpass:', error);
