@@ -211,6 +211,58 @@ app.put('/api/outpasses/:id/status', authenticateToken, requireRole(['ADMIN']), 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server securely initialized. Listening on port ${PORT}`));
 
+// ==========================================
+// ANONYMOUS GRIEVANCE & CHAT ROUTES
+// ==========================================
+
+// 1. Submit a new anonymous grievance (Students)
+app.post('/api/grievances', authenticateToken, async (req, res) => {
+  const { category, message } = req.body;
+  try {
+    // We purposefully do NOT save req.user.userId here. 100% anonymous.
+    const grievance = await prisma.grievance.create({
+      data: {
+        category,
+        message,
+      },
+    });
+    res.json({ message: 'Grievance submitted anonymously!', grievance });
+  } catch (error) {
+    console.error('Error submitting grievance:', error);
+    res.status(500).json({ error: 'Failed to submit grievance' });
+  }
+});
+
+// 2. Fetch all grievances (Visible to everyone)
+app.get('/api/grievances', authenticateToken, async (req, res) => {
+  try {
+    const grievances = await prisma.grievance.findMany({
+      orderBy: { createdAt: 'desc' }, // Newest issues at the top
+    });
+    res.json(grievances);
+  } catch (error) {
+    console.error('Error fetching grievances:', error);
+    res.status(500).json({ error: 'Failed to fetch grievances' });
+  }
+});
+
+// 3. Reply to a grievance (Wardens and Admins Only)
+app.put('/api/grievances/:id/reply', authenticateToken, requireRole(['WARDEN', 'ADMIN', 'MENTOR']), async (req, res) => {
+  const { id } = req.params;
+  const { reply, status } = req.body;
+  
+  try {
+    const updatedGrievance = await prisma.grievance.update({
+      where: { id },
+      data: { reply, status },
+    });
+    res.json({ message: 'Reply posted successfully', grievance: updatedGrievance });
+  } catch (error) {
+    console.error('Error updating grievance:', error);
+    res.status(500).json({ error: 'Failed to update grievance' });
+  }
+});
+
 // Temporary Route: Create a Warden Account
 app.post('/api/setup-warden', async (req, res) => {
   try {

@@ -48,3 +48,12 @@ model Outpass {
   // Link this out-pass directly to the User table
   student       User          @relation(fields: [studentId], references: [id])
 }
+
+model Grievance {
+  id        String   @id @default(uuid())
+  category  String   // e.g., 'Food', 'Maintenance', 'Security', 'Other'
+  message   String
+  status    String   @default("PENDING") // PENDING, REVIEWED, RESOLVED
+  reply     String?  // Wardens can leave an anonymous public reply
+  createdAt DateTime @default(now())
+}
