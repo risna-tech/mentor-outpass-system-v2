@@ -9,6 +9,7 @@ import GrievanceBoard from './pages/GrievanceBoard';
 import ParentApproval from './pages/ParentApproval'; // NEW IMPORT
 import WardenDashboard from './pages/WardenDashboard';
 import NoticeBoard from './pages/NoticeBoard';
+import MentorDashboard from './pages/MentorDashboard';
 
 export default function App() {
   return (
@@ -42,6 +43,11 @@ export default function App() {
         <Route 
           path="/dashboard/admin/approvals" 
           element={<ProtectedRoute allowedRoles={['ADMIN']}><PassApprovals /></ProtectedRoute>} 
+        />
+        {/* ---------------- MENTOR ROUTES ---------------- */}
+        <Route 
+          path="/dashboard/mentor" 
+          element={<ProtectedRoute allowedRoles={['MENTOR', 'ADMIN']}><MentorDashboard /></ProtectedRoute>} 
         />
 
 {/* ---------------- WARDEN/MENTOR ROUTES ---------------- */}
