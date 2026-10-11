@@ -7,6 +7,7 @@ import PassApprovals from './pages/PassApprovals';
 import ProtectedRoute from './components/ProtectedRoute';
 import GrievanceBoard from './pages/GrievanceBoard';
 import ParentApproval from './pages/ParentApproval'; // NEW IMPORT
+import WardenDashboard from './pages/WardenDashboard';
 
 export default function App() {
   return (
@@ -42,11 +43,15 @@ export default function App() {
           element={<ProtectedRoute allowedRoles={['ADMIN']}><PassApprovals /></ProtectedRoute>} 
         />
 
-        {/* ---------------- WARDEN/MENTOR ROUTES ---------------- */}
-        <Route 
-          path="/dashboard/warden" 
-          element={<ProtectedRoute allowedRoles={['WARDEN', 'MENTOR', 'ADMIN']}><PassApprovals /></ProtectedRoute>} 
-        />
+{/* ---------------- WARDEN/MENTOR ROUTES ---------------- */}
+<Route 
+  path="/dashboard/warden" 
+  element={<ProtectedRoute allowedRoles={['WARDEN', 'MENTOR', 'ADMIN']}><WardenDashboard /></ProtectedRoute>} 
+/>
+<Route 
+  path="/dashboard/warden/approvals" 
+  element={<ProtectedRoute allowedRoles={['WARDEN', 'MENTOR', 'ADMIN']}><PassApprovals /></ProtectedRoute>} 
+/>
 
         {/* --------------- STUDENT ROUTES --------------- */}
         <Route 
