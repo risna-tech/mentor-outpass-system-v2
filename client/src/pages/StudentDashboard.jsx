@@ -55,17 +55,38 @@ export default function StudentDashboard() {
     try {
       const token = localStorage.getItem('token');
       
-      // Sending parentType along with the rest of the form data
-      await axios.post('https://mentor-outpass-system-v2.onrender.com/api/outpasses', formData, {
+      // 1. Send data to your backend
+      const response = await axios.post('https://mentor-outpass-system-v2.onrender.com/api/outpasses', formData, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setStatus({ type: 'success', message: 'Application submitted! Awaiting Parent WhatsApp Verification.' });
-      
-      setFormData({ 
-        leaveCategory: 'SHORT_LEAVE', destination: '', reason: '', 
-        departureDate: '', departureTime: '', returnDate: '', returnTime: '', parentType: 'Father', parentPhone: '' 
-      });
-      setTimeout(() => setActiveTab('history'), 3000);
+
+      // 2. If successful, generate the WhatsApp Link
+      if (response.status === 201) {
+        const outpassId = response.data.outpass.id;
+        const parentPhone = formData.parentPhone; 
+        
+        // Create the secure approval link for the parent
+        const approvalLink = `https://mentor-outpass-system-v2.vercel.app/approve/${outpassId}`;
+        
+        // Format the WhatsApp message (%0A creates a line break)
+        const waMessage = `*MENTOR HOSTEL SYSTEM*%0A%0AHello,%0AI have requested a hostel outpass.%0A%0A*Destination:* ${formData.destination}%0A*Reason:* ${formData.reason}%0A%0A*Please review and Approve/Reject my request here:*%0A${approvalLink}`;
+        
+        // Clean the phone number (remove any non-numbers, ensure country code)
+        let cleanPhone = parentPhone.replace(/\D/g, ''); 
+        if (!cleanPhone.startsWith('91')) cleanPhone = `91${cleanPhone}`;
+        
+        // Open WhatsApp in a new tab instantly!
+        window.open(`https://wa.me/${cleanPhone}?text=${waMessage}`, '_blank');
+        
+        setStatus({ type: 'success', message: 'Application submitted! Redirecting to WhatsApp...' });
+        
+        // Clear the form
+        setFormData({ 
+          leaveCategory: 'SHORT_LEAVE', destination: '', reason: '', 
+          departureDate: '', departureTime: '', returnDate: '', returnTime: '', parentType: 'Father', parentPhone: '' 
+        });
+        setTimeout(() => setActiveTab('history'), 3000);
+      }
     } catch (err) {
       setStatus({ type: 'error', message: err.response?.data?.message || 'Failed to submit.' });
     } finally {
@@ -267,7 +288,7 @@ export default function StudentDashboard() {
                             </span>
                           </div>
                           {pass.status === 'PENDING' && (
-                             <p className="text-[10px] text-gray-400 mt-2">Awaiting Parent/Warden</p>
+                              <p className="text-[10px] text-gray-400 mt-2">Awaiting Parent/Warden</p>
                           )}
                         </td>
                         <td className="px-6 py-4 text-center">
