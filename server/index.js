@@ -44,6 +44,45 @@ app.post('/api/login', async (req, res) => {
     res.json({ token, user: { id: user.id, email: user.email, role: user.role } });
     } catch (error) { console.error(error); res.status(500).json({ message: 'Internal server error.' }); }
 });
+// 3. Get All Outpasses (For Wardens, Mentors, and Admins)
+app.get('/api/outpasses/all', authenticateToken, requireRole(['WARDEN', 'MENTOR', 'ADMIN']), async (req, res) => {
+  try {
+    const outpasses = await prisma.outpass.findMany({
+      include: {
+        student: {
+          select: { email: true } // Grabs the student's email to show the Warden
+        }
+      },
+      orderBy: { createdAt: 'desc' } // Shows newest requests at the top
+    });
+    res.json(outpasses);
+  } catch (error) {
+    console.error('Error fetching all outpasses:', error);
+    res.status(500).json({ message: 'Internal server error.' });
+  }
+});
+
+// 4. Update Outpass Status (Approve or Reject)
+app.put('/api/outpasses/:id/status', authenticateToken, requireRole(['WARDEN', 'MENTOR', 'ADMIN']), async (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+
+  // Security check: Only allow valid statuses
+  if (!['APPROVED', 'REJECTED'].includes(status)) {
+    return res.status(400).json({ message: 'Invalid status.' });
+  }
+
+  try {
+    const updatedOutpass = await prisma.outpass.update({
+      where: { id },
+      data: { status },
+    });
+    res.json({ message: `Outpass ${status.toLowerCase()} successfully`, outpass: updatedOutpass });
+  } catch (error) {
+    console.error('Error updating outpass status:', error);
+    res.status(500).json({ message: 'Internal server error.' });
+  }
+});
 
 // Submit Outpass Request
 app.post('/api/outpass', authenticateToken, requireRole(['STUDENT']), async (req, res) => {
