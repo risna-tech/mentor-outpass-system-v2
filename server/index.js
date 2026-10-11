@@ -89,6 +89,7 @@ app.post('/api/outpasses', authenticateToken, requireRole(['STUDENT']), async (r
     });
     
     // NEW: Trigger the automated WhatsApp Message
+// NEW: Trigger the automated WhatsApp Message
     try {
       const formattedPhone = parentPhone.startsWith('+') ? parentPhone : `+91${parentPhone}`;
       
