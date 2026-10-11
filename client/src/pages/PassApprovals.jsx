@@ -11,7 +11,7 @@ export default function PassApprovals() {
   const fetchApplications = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(' https://mentor-outpass-system-v2.onrender.com/api/outpasses/all', {
+      const response = await axios.get('https://mentor-outpass-system-v2.onrender.com/api/outpasses/all', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setApplications(response.data);
@@ -29,7 +29,7 @@ export default function PassApprovals() {
   const handleStatusUpdate = async (id, newStatus) => {
     try {
       const token = localStorage.getItem('token');
-      await axios.put(` https://mentor-outpass-system-v2.onrender.com/api/outpasses/${id}/status`, 
+      await axios.put(`https://mentor-outpass-system-v2.onrender.com/api/outpasses/${id}/status`, 
         { status: newStatus },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -43,12 +43,24 @@ export default function PassApprovals() {
   return (
     <div className="min-h-screen bg-ivory p-8">
       <div className="max-w-6xl mx-auto">
-        <button 
-          onClick={() => navigate('/dashboard/admin')}
-          className="flex items-center text-teal hover:text-navy transition-colors mb-6 font-medium"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" /> Back to Dashboard
-        </button>
+        
+        {/* --- NEW BUTTON LAYOUT --- */}
+        <div className="flex justify-between items-center mb-6">
+          <button 
+            onClick={() => navigate(-1)}
+            className="flex items-center text-teal hover:text-navy transition-colors font-medium"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" /> Back to Dashboard
+          </button>
+
+          <button 
+            onClick={() => navigate('/dashboard/grievances')}
+            className="flex items-center px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg shadow-sm font-medium transition-colors"
+          >
+            View Grievance Board
+          </button>
+        </div>
+        {/* ------------------------- */}
 
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           <div className="bg-navy p-6">
