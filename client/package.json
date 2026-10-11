@@ -26,5 +26,14 @@
     "postcss": "^8.5.29",
     "tailwindcss": "^3.4.19",
     "vite": "^5.4.21"
+    
   }
+}
+{
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
 }
