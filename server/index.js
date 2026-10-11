@@ -93,13 +93,12 @@ app.post('/api/outpasses', authenticateToken, requireRole(['STUDENT']), async (r
     try {
       const formattedPhone = parentPhone.startsWith('+') ? parentPhone : `+91${parentPhone}`;
       
-      const msgText = `*MENTOR HOSTEL SYSTEM*\n\nDear ${parentType || 'Parent'},\nYour ward has requested an out-pass.\n\n*Destination:* ${destination}\n*Reason:* ${reason}\n*Leaves:* ${new Date(departureDate).toLocaleDateString()} at ${departureTime}\n*Returns:* ${new Date(returnDate).toLocaleDateString()} at ${returnTime}\n\n*Reply with:*\nAPPROVE ${outpass.id}\nREJECT ${outpass.id}`;
-      
       await twilioClient.messages.create({
-        body: msgText,
         from: process.env.TWILIO_WHATSAPP_NUMBER,
-        to: `whatsapp:${formattedPhone}`
+        to: `whatsapp:${formattedPhone}`,
+        contentSid: 'HX6a0f411e81d092c214c00d5e2727cc36' // Added to satisfy Twilio's template requirement
       });
+      
       console.log('WhatsApp message sent for outpass:', outpass.id);
     } catch (twilioError) {
       console.error('Failed to send Twilio message:', twilioError);
