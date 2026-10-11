@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { FilePlus, Clock, LogOut, User, CheckCircle, AlertTriangle, Loader2, MapPin, QrCode, AlertCircle } from 'lucide-react';
+import { FilePlus, Clock, LogOut, User, CheckCircle, AlertTriangle, Loader2, MapPin, QrCode, AlertCircle, Download } from 'lucide-react';
 
 export default function StudentDashboard() {
   const navigate = useNavigate();
@@ -11,7 +11,18 @@ export default function StudentDashboard() {
   const [activeTab, setActiveTab] = useState('history'); 
   const [outpasses, setOutpasses] = useState([]);
   
-  const [formData, setFormData] = useState({ destination: '', reason: '', departureDate: '', returnDate: '' });
+  // NEW: Added leaveCategory, exact times, and parentPhone to state
+  const [formData, setFormData] = useState({ 
+    leaveCategory: 'SHORT_LEAVE',
+    destination: '', 
+    reason: '', 
+    departureDate: '', 
+    departureTime: '',
+    returnDate: '',
+    returnTime: '',
+    parentPhone: '' 
+  });
+  
   const [status, setStatus] = useState({ type: '', message: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
@@ -42,12 +53,18 @@ export default function StudentDashboard() {
 
     try {
       const token = localStorage.getItem('token');
+      // Submitting the new advanced payload to the backend
       await axios.post('https://mentor-outpass-system-v2.onrender.com/api/outpasses', formData, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setStatus({ type: 'success', message: 'Application submitted! Pending approval.' });
-      setFormData({ destination: '', reason: '', departureDate: '', returnDate: '' });
-      setTimeout(() => setActiveTab('history'), 2000);
+      setStatus({ type: 'success', message: 'Application submitted! Awaiting Parent WhatsApp Verification.' });
+      
+      // Reset form
+      setFormData({ 
+        leaveCategory: 'SHORT_LEAVE', destination: '', reason: '', 
+        departureDate: '', departureTime: '', returnDate: '', returnTime: '', parentPhone: '' 
+      });
+      setTimeout(() => setActiveTab('history'), 3000);
     } catch (err) {
       setStatus({ type: 'error', message: err.response?.data?.message || 'Failed to submit.' });
     } finally {
@@ -80,7 +97,6 @@ export default function StudentDashboard() {
             <Clock className="w-5 h-5 mr-3" /> Pass History
           </button>
           
-          {/* NEW: Grievance Board Link */}
           <button onClick={() => navigate('/dashboard/grievances')} className="w-full flex items-center px-4 py-3 rounded-lg transition-colors hover:bg-gray-800 text-gray-300">
             <AlertCircle className="w-5 h-5 mr-3 text-orange-500" /> Report Grievance
           </button>
@@ -121,11 +137,11 @@ export default function StudentDashboard() {
           )}
 
           {activeTab === 'apply' ? (
-            /* APPLICATION FORM */
-            <div className="max-w-2xl bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            /* ADVANCED APPLICATION FORM */
+            <div className="max-w-2xl bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-12">
               <div className="bg-navy p-6">
                 <h2 className="text-lg font-bold text-ivory flex items-center">
-                  <MapPin className="w-5 h-5 mr-2 text-teal-300" /> Destination Details
+                  <MapPin className="w-5 h-5 mr-2 text-teal-300" /> Out-Pass Application
                 </h2>
               </div>
               <div className="p-8">
@@ -135,34 +151,75 @@ export default function StudentDashboard() {
                     <span>{status.message}</span>
                   </div>
                 )}
-                <form onSubmit={handleApply} className="space-y-5">
+                
+                <form onSubmit={handleApply} className="space-y-6">
+                  {/* Leave Category */}
                   <div>
-                    <label className="block text-sm font-medium text-navy mb-1">Where are you going?</label>
-                    <input type="text" required value={formData.destination} onChange={(e) => setFormData({...formData, destination: e.target.value})} className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal outline-none" placeholder="e.g., Hometown, Hospital" />
+                    <label className="block text-sm font-medium text-navy mb-1">Leave Category</label>
+                    <select 
+                      required 
+                      value={formData.leaveCategory} 
+                      onChange={(e) => setFormData({...formData, leaveCategory: e.target.value})} 
+                      className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal outline-none"
+                    >
+                      <option value="SAME_DAY">Same Day Leave (Return before curfew)</option>
+                      <option value="SHORT_LEAVE">Short Leave (1-3 Days)</option>
+                      <option value="LONG_LEAVE">Long Leave (Vacation/Holidays)</option>
+                    </select>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-navy mb-1">Reason for leave</label>
-                    <textarea required rows="3" value={formData.reason} onChange={(e) => setFormData({...formData, reason: e.target.value})} className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal outline-none" placeholder="Provide a valid reason..."></textarea>
-                  </div>
+
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-navy mb-1">Departure Date</label>
-                      <input type="date" required value={formData.departureDate} onChange={(e) => setFormData({...formData, departureDate: e.target.value})} className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal outline-none" />
+                      <label className="block text-sm font-medium text-navy mb-1">Destination</label>
+                      <input type="text" required value={formData.destination} onChange={(e) => setFormData({...formData, destination: e.target.value})} className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal outline-none" placeholder="e.g., Hometown, Hospital" />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-navy mb-1">Return Date</label>
-                      <input type="date" required value={formData.returnDate} onChange={(e) => setFormData({...formData, returnDate: e.target.value})} className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal outline-none" />
+                      <label className="block text-sm font-medium text-navy mb-1">Parent's WhatsApp No.</label>
+                      <input type="tel" required value={formData.parentPhone} onChange={(e) => setFormData({...formData, parentPhone: e.target.value})} className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal outline-none" placeholder="e.g., 8095446482" />
                     </div>
                   </div>
-                  <button type="submit" disabled={isSubmitting} className="w-full bg-navy hover:bg-gray-800 text-white font-medium py-3 rounded-lg mt-4 flex justify-center items-center">
-                    {isSubmitting ? <><Loader2 className="animate-spin -ml-1 mr-2 h-5 w-5" /> Submitting...</> : 'Submit Application'}
+
+                  <div>
+                    <label className="block text-sm font-medium text-navy mb-1">Reason for leave</label>
+                    <textarea required rows="2" value={formData.reason} onChange={(e) => setFormData({...formData, reason: e.target.value})} className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal outline-none" placeholder="Provide a valid reason..."></textarea>
+                  </div>
+                  
+                  {/* Departure & Return with Exact Times */}
+                  <div className="grid grid-cols-2 gap-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <div className="space-y-3">
+                      <h4 className="font-semibold text-navy text-sm border-b pb-2">Departure Details</h4>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Date</label>
+                        <input type="date" required value={formData.departureDate} onChange={(e) => setFormData({...formData, departureDate: e.target.value})} className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal outline-none text-sm" />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Exact Time</label>
+                        <input type="time" required value={formData.departureTime} onChange={(e) => setFormData({...formData, departureTime: e.target.value})} className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal outline-none text-sm" />
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <h4 className="font-semibold text-navy text-sm border-b pb-2">Return Details</h4>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Date</label>
+                        <input type="date" required value={formData.returnDate} onChange={(e) => setFormData({...formData, returnDate: e.target.value})} className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal outline-none text-sm" />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Exact Time</label>
+                        <input type="time" required value={formData.returnTime} onChange={(e) => setFormData({...formData, returnTime: e.target.value})} className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal outline-none text-sm" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <button type="submit" disabled={isSubmitting} className="w-full bg-navy hover:bg-gray-800 text-white font-medium py-3 rounded-lg mt-4 flex justify-center items-center transition-colors shadow-sm">
+                    {isSubmitting ? <><Loader2 className="animate-spin -ml-1 mr-2 h-5 w-5" /> Submitting Request...</> : 'Submit Application'}
                   </button>
                 </form>
               </div>
             </div>
           ) : (
-            /* HISTORY TABLE WITH QR CODES */
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            /* HISTORY TABLE WITH DOWNLOAD PASS OPTION */
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-12">
               <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
                 <h3 className="text-lg font-medium text-navy">My Applications</h3>
               </div>
@@ -175,46 +232,52 @@ export default function StudentDashboard() {
                   <thead>
                     <tr className="bg-navy text-ivory text-sm">
                       <th className="px-6 py-4 font-medium">Destination</th>
-                      <th className="px-6 py-4 font-medium">Dates</th>
+                      <th className="px-6 py-4 font-medium">Dates & Times</th>
                       <th className="px-6 py-4 font-medium text-center">Status</th>
                       <th className="px-6 py-4 font-medium text-center">Gate Pass</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
                     {outpasses.map((pass) => (
-                      <tr key={pass.id} className="hover:bg-gray-50">
+                      <tr key={pass.id} className="hover:bg-gray-50 transition-colors">
                         <td className="px-6 py-4">
-                          <p className="font-medium text-navy">{pass.destination}</p>
-                          <p className="text-xs text-gray-500 mt-1">{pass.reason}</p>
+                          <p className="font-semibold text-navy">{pass.destination}</p>
+                          <p className="text-xs font-medium text-teal-600 mt-0.5">{pass.leaveCategory?.replace('_', ' ')}</p>
+                          <p className="text-xs text-gray-500 mt-1 line-clamp-2">{pass.reason}</p>
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-600">
-                          <div className="whitespace-nowrap">{new Date(pass.departureDate).toLocaleDateString()}</div>
-                          <div className="text-xs text-gray-400">to {new Date(pass.returnDate).toLocaleDateString()}</div>
+                          <div className="font-medium text-gray-800">Departs: {new Date(pass.departureDate).toLocaleDateString()} {pass.departureTime && `at ${pass.departureTime}`}</div>
+                          <div className="text-gray-500 mt-1">Returns: {new Date(pass.returnDate).toLocaleDateString()} {pass.returnTime && `at ${pass.returnTime}`}</div>
                         </td>
                         <td className="px-6 py-4 text-center">
-                          <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                            pass.status === 'APPROVED' ? 'bg-green-100 text-green-700' : 
-                            pass.status === 'REJECTED' ? 'bg-red-100 text-red-700' : 'bg-orange-100 text-orange-700'
-                          }`}>
-                            {pass.status}
-                          </span>
+                          <div className="flex justify-center">
+                            <span className={`px-3 py-1 rounded-full text-xs font-bold border ${
+                              pass.status === 'APPROVED' ? 'bg-green-50 text-green-700 border-green-200' : 
+                              pass.status === 'REJECTED' ? 'bg-red-50 text-red-700 border-red-200' : 'bg-orange-50 text-orange-700 border-orange-200'
+                            }`}>
+                              {pass.status}
+                            </span>
+                          </div>
+                          {pass.status === 'PENDING' && (
+                             <p className="text-[10px] text-gray-400 mt-2">Awaiting Parent/Warden</p>
+                          )}
                         </td>
                         <td className="px-6 py-4 text-center">
                           {pass.status === 'APPROVED' ? (
-                            <div className="flex justify-center items-center flex-col">
+                            <div className="flex justify-center items-center flex-col space-y-2">
                               <img 
                                 src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=VERIFY_PASS_${pass.id}`} 
                                 alt="QR Code" 
-                                className="w-16 h-16 rounded-md shadow-sm border border-gray-200"
+                                className="w-12 h-12 rounded-sm shadow-sm border border-gray-200"
                               />
-                              <span className="text-[10px] text-gray-500 mt-1 flex items-center">
-                                <QrCode className="w-3 h-3 mr-1" /> Ready to scan
-                              </span>
+                              <button className="flex items-center text-[11px] font-bold text-white bg-teal hover:bg-navy px-2 py-1.5 rounded transition-colors">
+                                <Download className="w-3 h-3 mr-1" /> PDF Pass
+                              </button>
                             </div>
                           ) : pass.status === 'REJECTED' ? (
                             <span className="text-gray-400 text-xs">N/A</span>
                           ) : (
-                            <span className="text-gray-400 text-xs">Waiting...</span>
+                            <span className="text-gray-400 text-xs italic">Locked</span>
                           )}
                         </td>
                       </tr>

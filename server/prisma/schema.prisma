@@ -15,11 +15,22 @@ enum Role {
   ADMIN
 }
 
-// New Status Enum for Out-Passes
 enum OutpassStatus {
   PENDING
   APPROVED
   REJECTED
+}
+
+enum LeaveCategory {
+  SAME_DAY
+  SHORT_LEAVE
+  LONG_LEAVE
+}
+
+enum GrievanceStatus {
+  PENDING
+  REVIEWED
+  RESOLVED
 }
 
 model User {
@@ -29,31 +40,56 @@ model User {
   role         Role      @default(STUDENT)
   isActive     Boolean   @default(true)
   createdAt    DateTime  @default(now())
-  
-  // A student can have multiple out-passes
-  outpasses    Outpass[] 
+
+  // --- Profile & Workflow Details ---
+  fullName     String?
+  regNumber    String?   @unique
+  roomNumber   String?
+  course       String?
+  parentPhone  String?   // This will store the father's WhatsApp number (e.g., 8095446482)
+
+  // --- Mentor-Student Hierarchical Link ---
+  mentorId     String?
+  mentor       User?     @relation("MentorStudents", fields: [mentorId], references: [id])
+  students     User[]    @relation("MentorStudents")
+
+  outpasses    Outpass[]
 }
 
-// New Outpass Table
 model Outpass {
-  id            String        @id @default(uuid())
-  studentId     String
-  destination   String
-  reason        String
-  departureDate DateTime
-  returnDate    DateTime
-  status        OutpassStatus @default(PENDING)
-  createdAt     DateTime      @default(now())
+  id              String         @id @default(uuid())
+  passNumber      String?        @unique @default(cuid()) // <-- Added '?' to make it optional
+  studentId       String
+  
+  // Leave Configuration
+  leaveCategory   LeaveCategory  @default(SHORT_LEAVE)
+  destination     String
+  reason          String
+  
+  // Strict Timings
+  departureDate   DateTime
+  departureTime   String?        // e.g., "10:00 AM"
+  returnDate      DateTime
+  returnTime      String?        // e.g., "05:00 PM"
 
-  // Link this out-pass directly to the User table
-  student       User          @relation(fields: [studentId], references: [id])
-}
+  // --- Multi-Tier Chain of Command ---
+  parentStatus    OutpassStatus  @default(PENDING)
+  mentorStatus    OutpassStatus  @default(PENDING)
+  wardenStatus    OutpassStatus  @default(PENDING)
+  
+  // Overall status (For easy filtering on dashboards)
+  status          OutpassStatus  @default(PENDING) 
 
-model Grievance {
-  id        String   @id @default(uuid())
-  category  String   // e.g., 'Food', 'Maintenance', 'Security', 'Other'
-  message   String
-  status    String   @default("PENDING") // PENDING, REVIEWED, RESOLVED
-  reply     String?  // Wardens can leave an anonymous public reply
-  createdAt DateTime @default(now())
+  // Feedback / Audit Trail
+  parentComment   String?
+  mentorComment   String?
+  wardenComment   String?
+
+  // --- Security Tracking ---
+  actualExitTime  DateTime?
+  actualReturnTime DateTime?
+
+  createdAt       DateTime       @default(now())
+
+  student         User           @relation(fields: [studentId], references: [id])
 }
