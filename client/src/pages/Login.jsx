@@ -27,6 +27,20 @@ export default function Login() {
         password,
         role
       });
+      if (response.data.token) {
+  localStorage.setItem('token', response.data.token);
+  localStorage.setItem('user', JSON.stringify(response.data.user));
+  
+  // Route the user to the correct dashboard based on their role
+  const userRole = response.data.user.role;
+  if (userRole === 'STUDENT') {
+    navigate('/dashboard/student');
+  } else if (userRole === 'WARDEN' || userRole === 'MENTOR') {
+    navigate('/dashboard/warden'); // Make sure this matches your PassApprovals route in App.jsx
+  } else if (userRole === 'ADMIN') {
+    navigate('/dashboard/admin');
+  }
+}
 
       // Save the secure token
       localStorage.setItem('token', response.data.token);
