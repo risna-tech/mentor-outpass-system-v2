@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { FilePlus, Clock, LogOut, User, CheckCircle, AlertTriangle, Loader2, MapPin, QrCode } from 'lucide-react';
+import { FilePlus, Clock, LogOut, User, CheckCircle, AlertTriangle, Loader2, MapPin, QrCode, AlertCircle } from 'lucide-react';
 
 export default function StudentDashboard() {
   const navigate = useNavigate();
@@ -60,7 +60,6 @@ export default function StudentDashboard() {
     navigate('/login');
   };
 
-  // Calculate dynamic stats
   const pendingCount = outpasses.filter(p => p.status === 'PENDING').length;
   const approvedCount = outpasses.filter(p => p.status === 'APPROVED').length;
 
@@ -79,6 +78,11 @@ export default function StudentDashboard() {
           </button>
           <button onClick={() => setActiveTab('history')} className={`w-full flex items-center px-4 py-3 rounded-lg transition-colors ${activeTab === 'history' ? 'bg-teal text-white' : 'hover:bg-gray-800 text-gray-300'}`}>
             <Clock className="w-5 h-5 mr-3" /> Pass History
+          </button>
+          
+          {/* NEW: Grievance Board Link */}
+          <button onClick={() => navigate('/dashboard/grievances')} className="w-full flex items-center px-4 py-3 rounded-lg transition-colors hover:bg-gray-800 text-gray-300">
+            <AlertCircle className="w-5 h-5 mr-3 text-orange-500" /> Report Grievance
           </button>
         </nav>
 
@@ -102,7 +106,7 @@ export default function StudentDashboard() {
 
         <div className="p-8 flex-1 overflow-auto bg-ivory">
           
-          {/* Dynamic Stat Cards (Only show on History Tab) */}
+          {/* Dynamic Stat Cards */}
           {activeTab === 'history' && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
               <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm border-l-4 border-l-orange-500">
@@ -198,7 +202,6 @@ export default function StudentDashboard() {
                         <td className="px-6 py-4 text-center">
                           {pass.status === 'APPROVED' ? (
                             <div className="flex justify-center items-center flex-col">
-                              {/* Dynamic QR Code Generated via API using the Pass ID */}
                               <img 
                                 src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=VERIFY_PASS_${pass.id}`} 
                                 alt="QR Code" 
