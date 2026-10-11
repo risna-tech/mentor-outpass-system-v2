@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { FilePlus, Clock, LogOut, User, CheckCircle, AlertTriangle, Loader2, MapPin, QrCode, AlertCircle, Download } from 'lucide-react';
+import { LogOut } from 'lucide-react'; // Add this to your existing lucide-react import
 
 export default function StudentDashboard() {
   const navigate = useNavigate();
@@ -94,13 +95,12 @@ export default function StudentDashboard() {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.clear();
-    navigate('/login');
-  };
-
   const pendingCount = outpasses.filter(p => p.status === 'PENDING').length;
   const approvedCount = outpasses.filter(p => p.status === 'APPROVED').length;
+  const handleLogout = () => {
+    localStorage.clear(); 
+    navigate('/login');
+ };
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -126,6 +126,12 @@ export default function StudentDashboard() {
             onClick={() => navigate('/dashboard/notices')}
             className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-sm font-medium transition-colors ml-4"
           >
+           <button 
+            onClick={handleLogout}
+            className="flex items-center px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg font-medium transition-colors ml-4 border border-red-200"
+          >
+            <LogOut className="w-4 h-4 mr-2" /> Logout
+          </button> 
             Notice Board
           </button>
         </nav>

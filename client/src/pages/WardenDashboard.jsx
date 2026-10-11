@@ -1,16 +1,29 @@
 import { useNavigate } from 'react-router-dom';
 import { ClipboardCheck, MessageSquareWarning } from 'lucide-react';
 import { ClipboardCheck, MessageSquareWarning, Megaphone } from 'lucide-react';
+import { ClipboardCheck, MessageSquareWarning, Megaphone, LogOut } from 'lucide-react';
 
 export default function WardenDashboard() {
   const navigate = useNavigate();
+  const handleLogout = () => {
+    localStorage.clear();
+    navigate('/login');
+  };
 
-  return (
+return (
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-5xl mx-auto">
-        <div className="bg-[#1a237e] p-8 rounded-xl shadow-sm mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">Warden Dashboard</h1>
-          <p className="text-teal-200">Welcome back. Select a module to manage hostel operations.</p>
+        <div className="bg-[#1a237e] p-8 rounded-xl shadow-sm mb-8 flex justify-between items-start">
+          <div>
+            <h1 className="text-3xl font-bold text-white mb-2">Warden Dashboard</h1>
+            <p className="text-teal-200">Welcome back. Select a module to manage hostel operations.</p>
+          </div>
+          <button 
+            onClick={handleLogout}
+            className="flex items-center px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors border border-white/20"
+          >
+            <LogOut className="w-4 h-4 mr-2" /> Logout
+          </button>
         </div>
         
         <div className="grid md:grid-cols-3 gap-6">
