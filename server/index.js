@@ -210,3 +210,24 @@ app.put('/api/outpasses/:id/status', authenticateToken, requireRole(['ADMIN']), 
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server securely initialized. Listening on port ${PORT}`));
+
+// Temporary Route: Create a Warden Account
+app.post('/api/setup-warden', async (req, res) => {
+  try {
+    const exists = await prisma.user.findUnique({ where: { email: 'warden@mentor.com' } });
+    if (exists) return res.json({ message: 'Warden already exists!' });
+
+    const hashedPassword = await bcrypt.hash('Warden123!', 10);
+    await prisma.user.create({
+      data: {
+        email: 'warden@mentor.com',
+        passwordHash: hashedPassword,
+        role: 'WARDEN'
+      }
+    });
+    res.json({ message: 'Warden account created successfully!' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to create warden' });
+  }
+});
